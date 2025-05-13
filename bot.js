@@ -68,14 +68,6 @@ bot.start(async (ctx) => {
   }
 });
 
-// Запуск бота
-bot.launch().then(() => {
-  console.log('Bot is running');
-}).catch((error) => {
-  console.error('Failed to launch bot:', error.message);
-  process.exit(1);
-});
-
 // Обработка graceful shutdown
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
