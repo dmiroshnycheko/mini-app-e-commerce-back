@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  tgId         String       @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  accessToken  String       @unique
+  refreshToken String       @unique
+  balance      Float        @default(0.0)
+  bonusBalance Float        @default(0.0)
+  invitedCount Int          @default(0)
+  bonusPercent Float        @default(5.0)
+  role         String       @default("user") // "user" or "admin"
+  referralCode String       @unique
+  referrerId   Int?
+  referrer     User?        @relation("Referrals", fields: [referrerId], references: [id])
+  referrals    User[]       @relation("Referrals")
+  purchases    Purchase[]
+  payments     Payment[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  Deposit      Deposit[]
+  Withdrawal   Withdrawal[]
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  icon      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Withdrawal {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  status    String   @default("pending") // "pending", "confirmed", "rejected"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          Int        @id @default(autoincrement())
+  categoryId  Int
+  category    Category   @relation(fields: [categoryId], references: [id])
+  name        String
+  description String
+  price       Float
+  quantity    Int
+  fileContent String     @default("") // Поле для хранения содержимого файла  purchases   Purchase[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  Purchase    Purchase[]
+}
+
+model Purchase {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id])
+  price       Float
+  fileContent String
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      String // "deposit" or "purchase"
+  amount    Float
+  createdAt DateTime @default(now())
+}
+
+model Deposit {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  amount       Float
+  status       String   @default("pending") // "pending", "confirmed", "rejected"
+  trc20Address String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
