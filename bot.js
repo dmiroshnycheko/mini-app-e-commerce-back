@@ -11,7 +11,17 @@ if (!process.env.BOT_TOKEN) {
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
-
+bot.command('magazin', (ctx) => {
+  ctx.reply('Открываю магазин...', {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: 'Магазин', url: 'https://mini-app-e-commerce-tau.vercel.app/' },
+        ],
+      ],
+    },
+  });
+});
 // Обработка команды /start
 bot.start(async (ctx) => {
   const tgId = ctx.from.id.toString();

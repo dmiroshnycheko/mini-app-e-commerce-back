@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { prisma } from '../prisma.js';
+import bot from '../bot.js'; // Импортируем бота
 
 const router = Router();
 
@@ -26,10 +27,13 @@ router.get('/', authMiddleware, async (req, res) => {
 // Совершить покупку продукта
 router.post('/', authMiddleware, async (req, res) => {
   const userId = req.user.id;
-  const { productId } = req.body;
+  const { productId, quantity = 1 } = req.body;
 
   if (!productId || isNaN(parseInt(productId, 10))) {
     return res.status(400).json({ error: 'Invalid productId' });
+  }
+  if (isNaN(parseInt(quantity)) || parseInt(quantity) < 1) {
+    return res.status(400).json({ error: 'Invalid quantity' });
   }
 
   try {
@@ -37,61 +41,83 @@ router.post('/', authMiddleware, async (req, res) => {
       where: { id: parseInt(productId, 10) },
     });
 
-    if (!product || product.quantity <= 0) {
-      return res.status(400).json({ error: 'Product not available' });
+    if (!product || product.quantity < parseInt(quantity)) {
+      return res.status(400).json({ error: 'Product not available in requested quantity' });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { referrer: true }, // Получаем реферера
+      include: { referrer: true },
     });
 
-    if (!user || user.balance < product.price) {
+    const totalPrice = product.price * parseInt(quantity);
+    if (!user || user.balance < totalPrice) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
-    const [updatedUser, updatedProduct, purchase, updatedReferrer] = await prisma.$transaction([
+    const [updatedUser, updatedProduct, purchase, payment, updatedReferrer] = await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
         data: {
-          balance: { decrement: product.price },
+          balance: { decrement: totalPrice },
         },
       }),
       prisma.product.update({
         where: { id: product.id },
         data: {
-          quantity: { decrement: 1 },
+          quantity: { decrement: parseInt(quantity) },
         },
       }),
       prisma.purchase.create({
         data: {
           userId,
           productId: product.id,
-          price: product.price,
+          price: totalPrice,
           fileContent: product.fileContent,
+          quantity: parseInt(quantity),
         },
       }),
       prisma.payment.create({
         data: {
           userId,
           type: 'purchase',
-          amount: product.price,
+          amount: totalPrice,
         },
       }),
-      // Начисляем бонус рефереру, если он есть
       ...(user.referrer
         ? [
             prisma.user.update({
               where: { id: user.referrer.id },
               data: {
                 bonusBalance: {
-                  increment: product.price * (user.referrer.bonusPercent / 100), // Начисляем процент
+                  increment: totalPrice * (user.referrer.bonusPercent / 100),
                 },
               },
             }),
           ]
         : []),
     ]);
+
+    // Отправка уведомления в Telegram
+    const tgId = user.tgId; // Предполагаем, что tgId хранится в модели User
+    const productName = product.name;
+    const fileContent = product.fileContent
+    const message = `
+📎 ${productName}
+Facebook + FP PZRD (21day) [1 x ${totalPrice.toFixed(2)} USD]
+
+1. ${fileContent}
+    `;
+
+    try {
+      await bot.telegram.sendMessage(tgId, message, {
+        parse_mode: 'HTML', // Для поддержки форматирования
+      });
+      console.log(`Telegram notification sent to ${tgId}`);
+    } catch (telegramError) {
+      console.error('Failed to send Telegram notification:', telegramError);
+      // Продолжаем выполнение, даже если уведомление не отправлено
+    }
 
     res.status(201).json(purchase);
   } catch (error) {
