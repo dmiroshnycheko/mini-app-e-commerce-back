@@ -21,25 +21,29 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'No bonus balance available' });
     }
 
+    const amountToWithdraw = user.bonusBalance;
+
     // Создаём запись о выводе (например, в таблице Payment или новой таблице)
     const withdrawal = await prisma.payment.create({
       data: {
         userId,
         type: 'withdrawal',
-        amount: user.bonusBalance,
+        amount: amountToWithdraw,
       },
     });
 
-    // Сбрасываем bonusBalance
+    // Обновляем баланс: уменьшаем bonusBalance и увеличиваем основной balance
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        bonusBalance: 0,
+        bonusBalance: 0,  // Сбрасываем бонусный баланс
+        balance: user.balance + amountToWithdraw,  // Переводим бонусы на основной баланс
       },
     });
 
     res.status(201).json({
       withdrawal,
+      newBalance: updatedUser.balance,
       newBonusBalance: updatedUser.bonusBalance,
     });
   } catch (error) {
@@ -47,5 +51,6 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to process withdrawal', details: error.message });
   }
 });
+
 
 export default router;
