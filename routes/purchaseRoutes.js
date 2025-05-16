@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { prisma } from '../prisma.js';
-import bot from '../bot.js'; // Импортируем бота
+import bot from '../bot.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// Получить список покупок текущего пользователя
 router.get('/', authMiddleware, async (req, res) => {
   const userId = req.user.id;
 
@@ -24,7 +24,6 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Совершить покупку продукта
 router.post('/', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   const { productId, quantity = 1 } = req.body;
@@ -55,6 +54,20 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
+    const orderId = uuidv4();
+
+    // Выбираем случайные строки из textContent
+    const availableTextContent = [...product.textContent]; // Копируем массив
+    if (availableTextContent.length < quantity) {
+      return res.status(400).json({ error: 'Not enough text content available' });
+    }
+    const selectedTexts = [];
+    for (let i = 0; i < quantity; i++) {
+      const randomIndex = Math.floor(Math.random() * availableTextContent.length);
+      selectedTexts.push(availableTextContent[randomIndex]);
+      availableTextContent.splice(randomIndex, 1); // Удаляем выбранную строку
+    }
+
     const [updatedUser, updatedProduct, purchase, payment, updatedReferrer] = await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
@@ -66,15 +79,17 @@ router.post('/', authMiddleware, async (req, res) => {
         where: { id: product.id },
         data: {
           quantity: { decrement: parseInt(quantity) },
+          textContent: availableTextContent, // Обновляем массив строк
         },
       }),
       prisma.purchase.create({
         data: {
+          orderId,
           userId,
           productId: product.id,
           price: totalPrice,
-          fileContent: product.fileContent,
           quantity: parseInt(quantity),
+          fileContent: selectedTexts.join('\n'), // Передаем выбранные строки в покупку
         },
       }),
       prisma.payment.create({
@@ -98,25 +113,22 @@ router.post('/', authMiddleware, async (req, res) => {
         : []),
     ]);
 
-    // Отправка уведомления в Telegram
-    const tgId = user.tgId; // Предполагаем, что tgId хранится в модели User
+    const tgId = user.tgId;
     const productName = product.name;
-    const fileContent = product.fileContent
-    const message = `
+    const message = `Order ID: ${orderId}
+Product ID: ${product.id}
 📎 ${productName}
-Facebook + FP PZRD (21day) [1 x ${totalPrice.toFixed(2)} USD]
+[${quantity} x ${totalPrice.toFixed(2)} USD]
 
-1. ${fileContent}
-    `;
+${selectedTexts.join('\n')}`;
 
     try {
       await bot.telegram.sendMessage(tgId, message, {
-        parse_mode: 'HTML', // Для поддержки форматирования
+        parse_mode: 'HTML',
       });
       console.log(`Telegram notification sent to ${tgId}`);
     } catch (telegramError) {
       console.error('Failed to send Telegram notification:', telegramError);
-      // Продолжаем выполнение, даже если уведомление не отправлено
     }
 
     res.status(201).json(purchase);
@@ -126,7 +138,6 @@ Facebook + FP PZRD (21day) [1 x ${totalPrice.toFixed(2)} USD]
   }
 });
 
-// Получить конкретную покупку по ID
 router.get('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;

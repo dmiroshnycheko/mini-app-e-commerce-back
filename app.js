@@ -7,7 +7,7 @@ import productRoutes from './routes/productsRoutes.js';
 import purchaseRoutes from './routes/purchaseRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 import bonusRoutes from './routes/bonusRoutes.js';
-
+import depositRoutes from './routes/depositRoutes.js'; // Добавляем маршрут
 
 dotenv.config();
 
@@ -20,8 +20,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/purchases', purchaseRoutes);
-app.use('/api/referrals', referralRoutes); 
-app.use('/api/bonus', bonusRoutes); 
-// app.use('/api/deposits', depositRoutes);
+app.use('/api/referrals', referralRoutes);
+app.use('/api/bonus', bonusRoutes);
+app.use('/api/deposits', depositRoutes); // Подключаем маршрут
 
 export default app;

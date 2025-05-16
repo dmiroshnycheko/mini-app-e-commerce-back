@@ -3,12 +3,13 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 import { prisma } from '../prisma.js';
 
 const router = Router();
+
 router.get('/category', authMiddleware, async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
       include: {
         _count: {
-          select: { products: true }, // Count the number of products for each category
+          select: { products: true },
         },
       },
     });
@@ -27,7 +28,6 @@ router.post('/category', authMiddleware, async (req, res) => {
         name,
         icon,
       },
-
     });
     res.json(category);
   } catch {
@@ -52,7 +52,6 @@ router.delete('/category/:id', authMiddleware, async (req, res) => {
 
 router.get('/product/category/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
-
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -68,6 +67,7 @@ router.get('/product/category/:id', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch products', details: error.message });
   }
 });
+
 router.get('/product', authMiddleware, async (req, res) => {
   try {
     const products = await prisma.product.findMany({
@@ -81,9 +81,9 @@ router.get('/product', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch products', details: error.message });
   }
 });
+
 router.get('/product/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
-
   try {
     const products = await prisma.product.findUnique({
       where: {
@@ -99,12 +99,12 @@ router.get('/product/:id', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch products', details: error.message });
   }
 });
+
 router.patch('/product/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { categoryId, name, description, price, quantity, fileContent } = req.body;
+  const { categoryId, name, description, price, quantity, textContent } = req.body;
 
   try {
-    // Проверяем, существует ли продукт
     const productExists = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
     });
@@ -112,7 +112,6 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Если categoryId передан, проверяем, существует ли категория
     if (categoryId) {
       const categoryExists = await prisma.category.findUnique({
         where: { id: parseInt(categoryId, 10) },
@@ -122,7 +121,6 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    // Обновляем продукт
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(id, 10) },
       data: {
@@ -131,7 +129,7 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
         description: description || undefined,
         price: price !== undefined ? parseFloat(price) : undefined,
         quantity: quantity !== undefined ? parseInt(quantity, 10) : undefined,
-        fileContent: fileContent || undefined,
+        textContent: textContent || undefined,
       },
       include: {
         category: true,
@@ -144,16 +142,15 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to update product', details: error.message });
   }
 });
-router.post('/product', authMiddleware, async (req, res) => {
-  const { categoryId, name, description, price, quantity, fileContent } = req.body;
 
-  // Валидация входных данных
-  if (!categoryId || !name || !description || !price || !quantity || !fileContent) {
-    return res.status(400).json({ error: 'All fields are required' });
+router.post('/product', authMiddleware, async (req, res) => {
+  const { categoryId, name, description, price, quantity, textContent } = req.body;
+
+  if (!categoryId || !name || !description || !price || !quantity || !textContent || !Array.isArray(textContent)) {
+    return res.status(400).json({ error: 'All fields are required, textContent must be an array' });
   }
 
-  // Проверка, что categoryId существует
-  const categoryExists = await prisma.category.findMany({
+  const categoryExists = await prisma.category.findUnique({
     where: { id: parseInt(categoryId, 10) },
   });
   if (!categoryExists) {
@@ -168,7 +165,7 @@ router.post('/product', authMiddleware, async (req, res) => {
         description,
         price: parseFloat(price),
         quantity: parseInt(quantity, 10),
-        fileContent, // Сохраняем содержимое файла
+        textContent, // Сохраняем массив строк
       },
       include: {
         category: true

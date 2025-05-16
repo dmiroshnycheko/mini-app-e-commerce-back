@@ -1,6 +1,5 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -22,7 +21,7 @@ model User {
   bonusBalance Float        @default(0.0)
   invitedCount Int          @default(0)
   bonusPercent Float        @default(5.0)
-  role         String       @default("user") // "user" or "admin"
+  role         String       @default("user")
   referralCode String       @unique
   referrerId   Int?
   referrer     User?        @relation("Referrals", fields: [referrerId], references: [id])
@@ -49,7 +48,7 @@ model Withdrawal {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   amount    Float
-  status    String   @default("pending") // "pending", "confirmed", "rejected"
+  status    String   @default("pending")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -62,8 +61,8 @@ model Product {
   description String
   price       Float
   quantity    Int
-  fileContent String     @default("") // Поле для хранения содержимого файла
-  purchases   Purchase[] // Убрано onDelete: Cascade
+  textContent String[]   @default([]) // Массив строк вместо fileContent
+  purchases   Purchase[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -71,21 +70,21 @@ model Product {
 model Purchase {
   id        Int     @id @default(autoincrement())
   userId    Int
+  orderId   String? @unique
   user      User    @relation(fields: [userId], references: [id])
   productId Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade) // Каскадное удаление только здесь
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   price     Float
   quantity  Int
-
   fileContent String
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Payment {
   id        Int      @id @default(autoincrement())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
-  type      String // "deposit" or "purchase"
+  type      String
   amount    Float
   createdAt DateTime @default(now())
 }
@@ -95,7 +94,7 @@ model Deposit {
   userId       Int
   user         User     @relation(fields: [userId], references: [id])
   amount       Float
-  status       String   @default("pending") // "pending", "confirmed", "rejected"
+  status       String   @default("pending")
   trc20Address String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
