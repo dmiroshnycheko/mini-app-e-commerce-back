@@ -14,6 +14,7 @@ router.get('/', authMiddleware, async (req, res) => {
       where: { userId },
       include: {
         product: true,
+        user: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -54,10 +55,15 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
+    console.log(product + 'product');
+    
+
     const orderId = uuidv4();
 
     // Выбираем случайные строки из textContent
     const availableTextContent = [...product.textContent]; // Копируем массив
+    console.log(availableTextContent);
+    
     if (availableTextContent.length < quantity) {
       return res.status(400).json({ error: 'Not enough text content available' });
     }
@@ -116,19 +122,26 @@ router.post('/', authMiddleware, async (req, res) => {
     const tgId = user.tgId;
     const productName = product.name;
     const message = `Order ID: ${orderId}
-Product ID: ${product.id}
-📎 ${productName}
-[${quantity} x ${totalPrice.toFixed(2)} USD]
-
-${selectedTexts.join('\n')}`;
+  Product ID: ${product.id}
+  📎 ${productName}
+  [${quantity} x ${totalPrice.toFixed(2)} USD]`;
 
     try {
+      // Send the initial message
       await bot.telegram.sendMessage(tgId, message, {
-        parse_mode: 'HTML',
+      parse_mode: 'HTML',
       });
       console.log(`Telegram notification sent to ${tgId}`);
+
+      // Send the selectedTexts as a file
+      const fileContent = selectedTexts.join('\n--------------\n');
+      await bot.telegram.sendDocument(tgId, {
+        source: Buffer.from(fileContent, 'utf-8'),
+        filename: `Order_${orderId}_Content.txt`,
+      });
+      console.log(`Telegram file sent to ${tgId}`);
     } catch (telegramError) {
-      console.error('Failed to send Telegram notification:', telegramError);
+      console.error('Failed to send Telegram notification or file:', telegramError);
     }
 
     res.status(201).json(purchase);

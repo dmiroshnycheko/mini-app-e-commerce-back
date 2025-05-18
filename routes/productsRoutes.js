@@ -144,9 +144,9 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
 });
 
 router.post('/product', authMiddleware, async (req, res) => {
-  const { categoryId, name, description, price, quantity, textContent } = req.body;
+  const { categoryId, name, description, price, textContent } = req.body;
 
-  if (!categoryId || !name || !description || !price || !quantity || !textContent || !Array.isArray(textContent)) {
+  if (!categoryId || !name || !description || !price || !textContent || !Array.isArray(textContent)) {
     return res.status(400).json({ error: 'All fields are required, textContent must be an array' });
   }
 
@@ -164,7 +164,7 @@ router.post('/product', authMiddleware, async (req, res) => {
         name,
         description,
         price: parseFloat(price),
-        quantity: parseInt(quantity, 10),
+        quantity: textContent.length,
         textContent, // Сохраняем массив строк
       },
       include: {

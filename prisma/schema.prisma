@@ -20,7 +20,7 @@ model User {
   balance      Float        @default(0.0)
   bonusBalance Float        @default(0.0)
   invitedCount Int          @default(0)
-  bonusPercent Float        @default(5.0)
+  bonusPercent Float        @default(0)
   role         String       @default("user")
   referralCode String       @unique
   referrerId   Int?
