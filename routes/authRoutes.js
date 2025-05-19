@@ -50,7 +50,7 @@ router.post('/login', async (req, res) => {
           balance: 0,
           bonusBalance: 0,
           invitedCount: 0,
-          bonusPercent: 5.0,
+          bonusPercent: 0,
           role: 'user',
         },
       });
