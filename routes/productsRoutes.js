@@ -128,7 +128,7 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
         name: name || undefined,
         description: description || undefined,
         price: price !== undefined ? parseFloat(price) : undefined,
-        quantity: quantity !== undefined ? parseInt(quantity, 10) : undefined,
+        quantity: textContent.length,
         textContent: textContent || undefined,
       },
       include: {
