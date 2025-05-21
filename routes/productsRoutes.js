@@ -19,7 +19,6 @@ router.get('/category', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server Error', details: error.message });
   }
 });
-
 router.post('/category', authMiddleware, async (req, res) => {
   const { name, icon } = req.body;
   try {
@@ -30,8 +29,36 @@ router.post('/category', authMiddleware, async (req, res) => {
       },
     });
     res.json(category);
-  } catch {
-    res.status(500).json({ error: 'Server Error' });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ error: 'Server Error', details: error.message });
+  }
+});
+
+router.patch('/category/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { name, icon } = req.body;
+
+  try {
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: parseInt(id, 10) },
+    });
+    if (!categoryExists) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id: parseInt(id, 10) },
+      data: {
+        name: name || undefined,
+        icon: icon || undefined,
+      },
+    });
+
+    res.status(200).json(updatedCategory);
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update category', details: error.message });
   }
 });
 

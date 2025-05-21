@@ -11,10 +11,18 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret';
 
-// Генерация токенов (синхронизировано с referralRoutes.js)
-const generateTokens = (tgId) => {
-  const accessToken = jwt.sign({ tgId }, JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = jwt.sign({ tgId }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+// Генерация токенов
+const generateTokens = (user) => {
+  const accessToken = jwt.sign(
+    { tgId: user.tgId, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+  const refreshToken = jwt.sign(
+    { tgId: user.tgId, role: user.role },
+    JWT_REFRESH_SECRET,
+    { expiresIn: '7d' }
+  );
   return { accessToken, refreshToken };
 };
 
@@ -37,7 +45,11 @@ router.post('/login', async (req, res) => {
     if (!dbUser) {
       console.log('User not found, creating a new user');
       const newReferralCode = crypto.randomBytes(8).toString('hex');
-      const { accessToken, refreshToken } = generateTokens(tgId);
+      const newUser = {
+        tgId: tgId.toString(),
+        role: 'user', // По умолчанию user, админ устанавливается вручную
+      };
+      const { accessToken, refreshToken } = generateTokens(newUser);
 
       dbUser = await prisma.user.create({
         data: {
@@ -57,7 +69,7 @@ router.post('/login', async (req, res) => {
       console.log('New user created:', dbUser);
     } else {
       console.log('User found, updating tokens');
-      const { accessToken, refreshToken } = generateTokens(tgId);
+      const { accessToken, refreshToken } = generateTokens(dbUser);
 
       dbUser = await prisma.user.update({
         where: { tgId: dbUser.tgId },
@@ -103,7 +115,14 @@ router.post('/refresh-token', async (req, res) => {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user.tgId);
+    // Проверяем валидность refresh token
+    try {
+      jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    } catch (error) {
+      return res.status(401).json({ error: 'Expired or invalid refresh token' });
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
 
     await prisma.user.update({
       where: { tgId: user.tgId },
