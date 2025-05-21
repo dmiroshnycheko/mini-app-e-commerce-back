@@ -56,6 +56,7 @@ router.post('/login', async (req, res) => {
           tgId: tgId.toString(),
           username: username || null, // Сохраняем username, если передан, иначе null          firstName,
           referralCode: newReferralCode,
+          firstName: firstName || null, // Явно обрабатываем firstName
           accessToken,
           refreshToken,
           balance: 0,
