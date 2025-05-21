@@ -17,8 +17,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors());
-app.use(express.json());
-app.use(checkPause);
+app.use(express.json({ type: 'application/json', charset: 'utf-8' }));app.use(checkPause);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
