@@ -54,8 +54,7 @@ router.post('/login', async (req, res) => {
       dbUser = await prisma.user.create({
         data: {
           tgId: tgId.toString(),
-          username,
-          firstName,
+          username: username || null, // Сохраняем username, если передан, иначе null          firstName,
           referralCode: newReferralCode,
           accessToken,
           refreshToken,
