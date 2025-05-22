@@ -36,6 +36,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Telegram ID is required' });
     }
 
+    console.log('Fetching user from database with tgId:', tgId.toString());
     let dbUser = await prisma.user.findUnique({
       where: { tgId: tgId.toString() },
     });
@@ -47,10 +48,15 @@ router.post('/login', async (req, res) => {
       const newUser = {
         tgId: tgId.toString(),
         role: 'user',
-        tokenVersion: 0, // Явно задаём tokenVersion
+        tokenVersion: 0,
       };
-      const { accessToken, refreshToken } = generateTokens(newUser);
+      console.log('New user object prepared:', newUser);
 
+      console.log('Generating tokens for new user...');
+      const { accessToken, refreshToken } = generateTokens(newUser);
+      console.log('Tokens generated:', { accessToken, refreshToken });
+
+      console.log('Creating new user in database...');
       dbUser = await prisma.user.create({
         data: {
           tgId: tgId.toString(),
@@ -64,14 +70,16 @@ router.post('/login', async (req, res) => {
           invitedCount: 0,
           bonusPercent: 0,
           role: 'user',
-          tokenVersion: 0, // Явно задаём tokenVersion
+          tokenVersion: 0,
         },
       });
       console.log('New user created:', dbUser);
     } else {
       console.log('User found, updating tokens');
       const { accessToken, refreshToken } = generateTokens(dbUser);
+      console.log('Tokens generated for existing user:', { accessToken, refreshToken });
 
+      console.log('Updating user in database...');
       dbUser = await prisma.user.update({
         where: { tgId: dbUser.tgId },
         data: { accessToken, refreshToken, username, firstName },
@@ -93,10 +101,11 @@ router.post('/login', async (req, res) => {
       accessToken: dbUser.accessToken,
       refreshToken: dbUser.refreshToken,
     };
-    console.log('Response sent successfully:', responseData); // Явный лог ответа
-    res.json(responseData);
+    console.log('Sending response to client:', responseData);
+    res.status(200).json(responseData);
+    console.log('Response sent successfully');
   } catch (error) {
-    console.error('Error occurred in login endpoint:', error);
+    console.error('Error occurred in login endpoint:', error.message, error.stack);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
