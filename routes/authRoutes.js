@@ -27,36 +27,36 @@ const generateTokens = (user) => {
 
 router.post('/login', async (req, res) => {
   try {
-    console.log('Login endpoint hit');
+    console.log('Login endpoint hit at', new Date().toISOString());
     const { tgId, username, firstName, referralCode } = req.body;
     console.log('Request body:', req.body);
 
     if (!tgId) {
-      console.error('Telegram ID is missing');
+      console.error('Telegram ID is missing at', new Date().toISOString());
       return res.status(400).json({ error: 'Telegram ID is required' });
     }
 
-    console.log('Fetching user from database with tgId:', tgId.toString());
+    console.log('Fetching user from database with tgId:', tgId.toString(), 'at', new Date().toISOString());
     let dbUser = await prisma.user.findUnique({
       where: { tgId: tgId.toString() },
     });
-    console.log('User fetched from database:', dbUser);
+    console.log('User fetched from database:', dbUser, 'at', new Date().toISOString());
 
     if (!dbUser) {
-      console.log('User not found, creating a new user');
+      console.log('User not found, creating a new user at', new Date().toISOString());
       const newReferralCode = crypto.randomBytes(8).toString('hex');
       const newUser = {
         tgId: tgId.toString(),
         role: 'user',
         tokenVersion: 0,
       };
-      console.log('New user object prepared:', newUser);
+      console.log('New user object prepared:', newUser, 'at', new Date().toISOString());
 
-      console.log('Generating tokens for new user...');
+      console.log('Generating tokens for new user at', new Date().toISOString());
       const { accessToken, refreshToken } = generateTokens(newUser);
-      console.log('Tokens generated:', { accessToken, refreshToken });
+      console.log('Tokens generated:', { accessToken: accessToken.substring(0, 10) + '...', refreshToken: refreshToken.substring(0, 10) + '...' }, 'at', new Date().toISOString());
 
-      console.log('Creating new user in database...');
+      console.log('Creating new user in database at', new Date().toISOString());
       dbUser = await prisma.user.create({
         data: {
           tgId: tgId.toString(),
@@ -73,18 +73,18 @@ router.post('/login', async (req, res) => {
           tokenVersion: 0,
         },
       });
-      console.log('New user created:', dbUser);
+      console.log('New user created:', dbUser, 'at', new Date().toISOString());
     } else {
-      console.log('User found, updating tokens');
+      console.log('User found, updating tokens at', new Date().toISOString());
       const { accessToken, refreshToken } = generateTokens(dbUser);
-      console.log('Tokens generated for existing user:', { accessToken, refreshToken });
+      console.log('Tokens generated for existing user:', { accessToken: accessToken.substring(0, 10) + '...', refreshToken: refreshToken.substring(0, 10) + '...' }, 'at', new Date().toISOString());
 
-      console.log('Updating user in database...');
+      console.log('Updating user in database at', new Date().toISOString());
       dbUser = await prisma.user.update({
         where: { tgId: dbUser.tgId },
         data: { accessToken, refreshToken, username, firstName },
       });
-      console.log('User tokens updated:', dbUser);
+      console.log('User tokens updated:', dbUser, 'at', new Date().toISOString());
     }
 
     const responseData = {
@@ -101,11 +101,11 @@ router.post('/login', async (req, res) => {
       accessToken: dbUser.accessToken,
       refreshToken: dbUser.refreshToken,
     };
-    console.log('Sending response to client:', responseData);
+    console.log('Sending response to client:', responseData, 'at', new Date().toISOString());
     res.status(200).json(responseData);
-    console.log('Response sent successfully');
+    console.log('Response sent successfully at', new Date().toISOString());
   } catch (error) {
-    console.error('Error occurred in login endpoint:', error.message, error.stack);
+    console.error('Error occurred in login endpoint:', error.message, error.stack, 'at', new Date().toISOString());
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
