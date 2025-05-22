@@ -14,12 +14,13 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_s
 // Генерация токенов
 const generateTokens = (user) => {
   const accessToken = jwt.sign(
-    { tgId: user.tgId, role: user.role },
+    { tgId: user.tgId, role: user.role, tokenVersion: 1, },
     JWT_SECRET,
+
     { expiresIn: '15m' }
   );
   const refreshToken = jwt.sign(
-    { tgId: user.tgId, role: user.role },
+    { tgId: user.tgId, role: user.role, tokenVersion: 1, },
     JWT_REFRESH_SECRET,
     { expiresIn: '7d' }
   );
