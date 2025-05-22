@@ -109,7 +109,9 @@ router.post('/refresh-token', async (req, res) => {
     const user = await prisma.user.findFirst({
       where: { refreshToken },
     });
-
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
     if (!user) {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
