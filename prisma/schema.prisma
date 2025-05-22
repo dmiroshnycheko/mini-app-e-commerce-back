@@ -32,6 +32,8 @@ model User {
   updatedAt    DateTime     @updatedAt
   Deposit      Deposit[]
   Withdrawal   Withdrawal[]
+    tokenVersion   Int      @default(2) 
+
 }
 
 model Category {

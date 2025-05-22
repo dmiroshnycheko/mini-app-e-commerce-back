@@ -25,13 +25,18 @@ export const authMiddleware = async (req, res, next) => {
         username: true,
         firstName: true,
         lastName: true,
-        role: true
+        role: true,
+        tokenVersion: true 
       }
     });
 
     if (!user) {
       console.error('AuthMiddleware: Invalid token, user not found');
       return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    if (user.tokenVersion !== decoded.tokenVersion) {
+      return res.status(401).json({ error: 'Token no longer valid' }); // ✅ тут
     }
 
     console.log('AuthMiddleware: User found:', user);
