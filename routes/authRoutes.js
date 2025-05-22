@@ -106,21 +106,19 @@ router.post('/refresh-token', async (req, res) => {
       return res.status(400).json({ error: 'Refresh token is required' });
     }
 
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    } catch (error) {
+      return res.status(401).json({ error: 'Expired or invalid refresh token' });
+    }
+
     const user = await prisma.user.findFirst({
       where: { refreshToken },
     });
+
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       return res.status(401).json({ error: 'Invalid refresh token' });
-    }
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid refresh token' });
-    }
-
-    // Проверяем валидность refresh token
-    try {
-      jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-    } catch (error) {
-      return res.status(401).json({ error: 'Expired or invalid refresh token' });
     }
 
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
@@ -142,6 +140,7 @@ router.post('/refresh-token', async (req, res) => {
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
+
 
 router.post('/register-referral', authMiddleware, async (req, res) => {
   try {
