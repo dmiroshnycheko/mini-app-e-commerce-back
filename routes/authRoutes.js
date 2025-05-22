@@ -46,16 +46,17 @@ router.post('/login', async (req, res) => {
       const newReferralCode = crypto.randomBytes(8).toString('hex');
       const newUser = {
         tgId: tgId.toString(),
-        role: 'user', // По умолчанию user, админ устанавливается вручную
+        role: 'user',
+        tokenVersion: 0, // Явно задаём tokenVersion
       };
       const { accessToken, refreshToken } = generateTokens(newUser);
 
       dbUser = await prisma.user.create({
         data: {
           tgId: tgId.toString(),
-          username: username || null, // Сохраняем username, если передан, иначе null          firstName,
+          username: username || null,
+          firstName: firstName || null,
           referralCode: newReferralCode,
-          firstName: firstName || null, // Явно обрабатываем firstName
           accessToken,
           refreshToken,
           balance: 0,
@@ -63,6 +64,7 @@ router.post('/login', async (req, res) => {
           invitedCount: 0,
           bonusPercent: 0,
           role: 'user',
+          tokenVersion: 0, // Явно задаём tokenVersion
         },
       });
       console.log('New user created:', dbUser);
@@ -77,7 +79,7 @@ router.post('/login', async (req, res) => {
       console.log('User tokens updated:', dbUser);
     }
 
-    res.json({
+    const responseData = {
       id: dbUser.id,
       tgId: dbUser.tgId,
       username: dbUser.username,
@@ -90,8 +92,9 @@ router.post('/login', async (req, res) => {
       referralCode: dbUser.referralCode,
       accessToken: dbUser.accessToken,
       refreshToken: dbUser.refreshToken,
-    });
-    console.log('Response sent successfully');
+    };
+    console.log('Response sent successfully:', responseData); // Явный лог ответа
+    res.json(responseData);
   } catch (error) {
     console.error('Error occurred in login endpoint:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
