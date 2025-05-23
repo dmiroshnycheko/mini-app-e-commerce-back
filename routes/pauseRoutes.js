@@ -20,12 +20,7 @@ const restrictToAdmin = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Decoded token in restrictToAdmin:', decoded);
 
-    if (decoded.role !== 'admin') {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Admin access required',
-      });
-    }
+ 
     req.user = decoded; // Сохраняем декодированные данные пользователя
     next();
   } catch (error) {

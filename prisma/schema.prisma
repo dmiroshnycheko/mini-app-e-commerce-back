@@ -61,6 +61,7 @@ model Product {
   category    Category   @relation(fields: [categoryId], references: [id])
   name        String
   description String
+  shortDescription String?
   price       Float
   quantity    Int
   textContent String[]   @default([]) // Массив строк вместо fileContent

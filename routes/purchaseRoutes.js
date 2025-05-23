@@ -11,7 +11,6 @@ router.get('/', authMiddleware, async (req, res) => {
 
   try {
     const purchases = await prisma.purchase.findMany({
-      where: { userId },
       include: {
         product: true,
         user: true,

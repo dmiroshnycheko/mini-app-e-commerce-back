@@ -129,7 +129,7 @@ router.get('/product/:id', authMiddleware, async (req, res) => {
 
 router.patch('/product/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { categoryId, name, description, price, quantity, textContent } = req.body;
+  const { categoryId, name, description, price, shortDescription, textContent } = req.body;
 
   try {
     const productExists = await prisma.product.findUnique({
@@ -154,6 +154,7 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
         categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
         name: name || undefined,
         description: description || undefined,
+        shortDescription,
         price: price !== undefined ? parseFloat(price) : undefined,
         quantity: textContent.length,
         textContent: textContent || undefined,
@@ -171,7 +172,7 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
 });
 
 router.post('/product', authMiddleware, async (req, res) => {
-  const { categoryId, name, description, price, textContent } = req.body;
+  const { categoryId, name, description, shortDescription, price, textContent } = req.body;
 
   if (!categoryId || !name || !description || !price || !textContent || !Array.isArray(textContent)) {
     return res.status(400).json({ error: 'All fields are required, textContent must be an array' });
@@ -190,6 +191,7 @@ router.post('/product', authMiddleware, async (req, res) => {
         categoryId: parseInt(categoryId, 10),
         name,
         description,
+        shortDescription,
         price: parseFloat(price),
         quantity: textContent.length,
         textContent, // Сохраняем массив строк
