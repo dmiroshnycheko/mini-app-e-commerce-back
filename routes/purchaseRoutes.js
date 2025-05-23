@@ -10,7 +10,9 @@ router.get('/', authMiddleware, async (req, res) => {
   const userId = req.user.id;
 
   try {
+    const isAdmin = req.user.role === 'admin';
     const purchases = await prisma.purchase.findMany({
+      where: isAdmin ? {} : { userId },
       include: {
         product: true,
         user: true,
