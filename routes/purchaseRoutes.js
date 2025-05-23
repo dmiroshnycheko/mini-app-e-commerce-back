@@ -14,7 +14,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const purchases = await prisma.purchase.findMany({
       where: isAdmin ? {} : { userId },
       include: {
-        product: true,
+        product: true, // Продукт может быть null
         user: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -56,15 +56,10 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
-    console.log(product + 'product');
-    
-
     const orderId = uuidv4();
 
     // Выбираем случайные строки из textContent
-    const availableTextContent = [...product.textContent]; // Копируем массив
-    console.log(availableTextContent);
-    
+    const availableTextContent = [...product.textContent];
     if (availableTextContent.length < quantity) {
       return res.status(400).json({ error: 'Not enough text content available' });
     }
@@ -72,7 +67,7 @@ router.post('/', authMiddleware, async (req, res) => {
     for (let i = 0; i < quantity; i++) {
       const randomIndex = Math.floor(Math.random() * availableTextContent.length);
       selectedTexts.push(availableTextContent[randomIndex]);
-      availableTextContent.splice(randomIndex, 1); // Удаляем выбранную строку
+      availableTextContent.splice(randomIndex, 1);
     }
 
     const [updatedUser, updatedProduct, purchase, payment, updatedReferrer] = await prisma.$transaction([
@@ -86,7 +81,7 @@ router.post('/', authMiddleware, async (req, res) => {
         where: { id: product.id },
         data: {
           quantity: { decrement: parseInt(quantity) },
-          textContent: availableTextContent, // Обновляем массив строк
+          textContent: availableTextContent,
         },
       }),
       prisma.purchase.create({
@@ -94,9 +89,10 @@ router.post('/', authMiddleware, async (req, res) => {
           orderId,
           userId,
           productId: product.id,
+          productName: product.name, // Сохраняем имя продукта
           price: totalPrice,
           quantity: parseInt(quantity),
-          fileContent: selectedTexts.join('\n'), // Передаем выбранные строки в покупку
+          fileContent: selectedTexts.join('\n'),
         },
       }),
       prisma.payment.create({
@@ -128,13 +124,11 @@ router.post('/', authMiddleware, async (req, res) => {
   [${quantity} x ${totalPrice.toFixed(2)} USD]`;
 
     try {
-      // Send the initial message
       await bot.telegram.sendMessage(tgId, message, {
-      parse_mode: 'HTML',
+        parse_mode: 'HTML',
       });
       console.log(`Telegram notification sent to ${tgId}`);
 
-      // Send the selectedTexts as a file
       const fileContent = selectedTexts.join('\n--------------\n');
       await bot.telegram.sendDocument(tgId, {
         source: Buffer.from(fileContent, 'utf-8'),
@@ -160,7 +154,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const purchase = await prisma.purchase.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
-        product: true,
+        product: true, // Продукт может быть null
       },
     });
 

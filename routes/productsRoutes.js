@@ -221,21 +221,32 @@ router.post('/product', authMiddleware, async (req, res) => {
 
 router.delete('/product/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
+  const user = req.user;
+
+  // Проверка роли администратора
+  if (user.role !== 'admin') {
+    return res.status(403).json({ error: 'Только администраторы могут удалять продукты' });
+  }
+
+  // Проверка валидности ID
+  const productId = parseInt(id, 10);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'Недопустимый ID продукта' });
+  }
 
   try {
-    const product = await prisma.product.delete({
+    await prisma.product.delete({
       where: {
-        id: parseInt(id, 10),
+        id: productId,
       },
     });
-    res.status(200).json(product);
+    res.status(200).json({ message: 'Продукт успешно удален' });
   } catch (error) {
     console.error('Error deleting product:', error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: 'Продукт не найден' });
     }
-    res.status(500).json({ error: 'Failed to delete product', details: error.message });
+    res.status(500).json({ error: 'Не удалось удалить продукт', details: error.message });
   }
 });
-
 export default router;
