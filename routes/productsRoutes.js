@@ -12,6 +12,9 @@ router.get('/category', authMiddleware, async (req, res) => {
           select: { products: true },
         },
       },
+      orderBy: {
+        id: 'desc',
+      },
     });
     res.json(categories);
   } catch (error) {
@@ -87,6 +90,9 @@ router.get('/product/category/:id', authMiddleware, async (req, res) => {
       include: {
         category: true,
       },
+      orderBy: {
+        id: 'desc',
+      },
     });
     res.status(200).json(products);
   } catch (error) {
@@ -100,6 +106,9 @@ router.get('/product', authMiddleware, async (req, res) => {
     const products = await prisma.product.findMany({
       include: {
         category: true,
+      },
+      orderBy: {
+        id: 'desc',
       },
     });
     res.status(200).json(products);
