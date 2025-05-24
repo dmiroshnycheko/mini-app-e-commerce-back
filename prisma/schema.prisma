@@ -71,16 +71,17 @@ model Product {
 }
 
 model Purchase {
-  id        Int     @id @default(autoincrement())
-  userId    Int
-  orderId   String? @unique
-  user      User    @relation(fields: [userId], references: [id])
-  productId Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  price     Float
-  quantity  Int
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  orderId     String?  @unique
+  user        User     @relation(fields: [userId], references: [id])
+  productId   Int?
+  product     Product? @relation(fields: [productId], references: [id]) // Убрали onDelete: Cascade, сделали Product опциональным
+  productName String   // Новое поле для имени продукта
+  price       Float
+  quantity    Int
   fileContent String
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model Payment {
