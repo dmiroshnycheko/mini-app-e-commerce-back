@@ -13,7 +13,7 @@ router.get('/category', authMiddleware, async (req, res) => {
         },
       },
       orderBy: {
-        id: 'desc',
+        id: 'asc',
       },
     });
     res.json(categories);
@@ -91,7 +91,7 @@ router.get('/product/category/:id', authMiddleware, async (req, res) => {
         category: true,
       },
       orderBy: {
-        id: 'desc',
+        id: 'asc',
       },
     });
     res.status(200).json(products);
@@ -108,7 +108,7 @@ router.get('/product', authMiddleware, async (req, res) => {
         category: true,
       },
       orderBy: {
-        id: 'desc',
+        id: 'asc',
       },
     });
     res.status(200).json(products);
