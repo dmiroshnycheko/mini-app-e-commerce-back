@@ -69,6 +69,7 @@ router.post('/', authMiddleware, async (req, res) => {
       selectedTexts.push(availableTextContent[randomIndex]);
       availableTextContent.splice(randomIndex, 1);
     }
+    const formattedText = selectedTexts.join('\n--------------\n');
 
     const [updatedUser, updatedProduct, purchase, payment, updatedReferrer] = await prisma.$transaction([
       prisma.user.update({
@@ -92,7 +93,7 @@ router.post('/', authMiddleware, async (req, res) => {
           productName: product.name, // Сохраняем имя продукта
           price: totalPrice,
           quantity: parseInt(quantity),
-          fileContent: selectedTexts.join('\n'),
+          fileContent: formattedText,
         },
       }),
       prisma.payment.create({
